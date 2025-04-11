@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Playground - Interactive Algorithm Visualization</title>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .neo-btn {
+            border-radius: 15px;
+            background: #f0f0f0;
+            box-shadow: 5px 5px 10px #cccccc,
+                       -5px -5px 10px #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        .neo-btn:active {
+            box-shadow: inset 5px 5px 10px #cccccc,
+                       inset -5px -5px 10px #ffffff;
+        }
+
+        .neo-container {
+            border-radius: 20px;
+            background: #f0f0f0;
+            box-shadow: 10px 10px 20px #cccccc,
+                       -10px -10px 20px #ffffff;
+            padding: 20px;
+        }
+
+        .canvas-container {
+            min-height: 400px;
+        }
+
+        .array-element {
+            width: 40px;
+            height: 40px;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode {
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .dark-mode .neo-container {
+            background: #2d2d2d;
+            box-shadow: 10px 10px 20px #1a1a1a,
+                       -10px -10px 20px #404040;
+        }
+
+        .dark-mode .neo-btn {
+            background: #2d2d2d;
+            box-shadow: 5px 5px 10px #1a1a1a,
+                       -5px -5px 10px #404040;
+        }
+
+        .loading {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 transition-all duration-300">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header Section -->
+        <div class="neo-container mb-8">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800">DSA Playground</h1>
+                <button id="themeToggle" class="neo-btn px-4 py-2">
+                    <i class="bi bi-moon-fill"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Algorithm Selection -->
+            <div class="neo-container">
+                <h2 class="text-xl font-semibold mb-4">Select Algorithm</h2>
+                <div class="space-y-4">
+                    <button class="neo-btn w-full px-4 py-2 text-left algorithm-btn" data-algo="bubbleSort">
+                        Bubble Sort
+                    </button>
+                    <button class="neo-btn w-full px-4 py-2 text-left algorithm-btn" data-algo="quickSort">
+                        Quick Sort
+                    </button>
+                    <button class="neo-btn w-full px-4 py-2 text-left algorithm-btn" data-algo="mergeSort">
+                        Merge Sort
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="neo-container md:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Visualization</h2>
+                    <div class="flex space-x-2">
+                        <button id="playBtn" class="neo-btn px-4 py-2">
+                            <i class="bi bi-play-fill"></i>
+                        </button>
+                        <button id="pauseBtn" class="neo-btn px-4 py-2">
+                            <i class="bi bi-pause-fill"></i>
+                        </button>
+                        <button id="resetBtn" class="neo-btn px-4 py-2">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="canvas-container neo-container bg-white">
+                    <div id="arrayContainer" class="flex items-end justify-center h-full">
+                        <!-- Array elements will be generated here -->
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <input type="range" id="speedControl" min="1" max="100" value="50" class="w-full">
+                    <label class="text-sm text-gray-600">Animation Speed</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Code Section -->
+        <div class="neo-container mt-8">
+            <h2 class="text-xl font-semibold mb-4">Code Implementation</h2>
+            <pre id="codeDisplay" class="bg-gray-800 text-white p-4 rounded-lg overflow-x-auto">
+// Select an algorithm to see its implementation
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let currentArray = [];
+        let isAnimating = false;
+        let animationSpeed = 50;
+        let currentAlgorithm = null;
+
+        // DOM Elements
+        const arrayContainer = document.getElementById('arrayContainer');
+        const speedControl = document.getElementById('speedControl');
+        const playBtn = document.getElementById('playBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const themeToggle = document.getElementById('themeToggle');
+        const codeDisplay = document.getElementById('codeDisplay');
+
+        // Initialize
+        function init() {
+            generateRandomArray();
+            setupEventListeners();
+        }
+
+        // Generate Random Array
+        function generateRandomArray() {
+            currentArray = Array.from({length: 10}, () => Math.floor(Math.random() * 100));
+            displayArray();
+        }
+
+        // Display Array
+        function displayArray() {
+            arrayContainer.innerHTML = '';
+            currentArray.forEach((value, index) => {
+                const element = document.createElement('div');
+                element.className = 'array-element neo-container';
+                element.style.height = `${value * 3}px`;
+                element.textContent = value;
+                arrayContainer.appendChild(element);
+            });
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            speedControl.addEventListener('input', (e) => {
+                animationSpeed = 101 - e.target.value;
+            });
+
+            playBtn.addEventListener('click', () => {
+                if (!isAnimating && currentAlgorithm) {
+                    startAnimation();
+                }
+            });
+
+            pauseBtn.addEventListener('click', () => {
+                isAnimating = false;
+            });
+
+            resetBtn.addEventListener('click', () => {
+                isAnimating = false;
+                generateRandomArray();
+            });
+
+            themeToggle.addEventListener('click', toggleTheme);
+
+            document.querySelectorAll('.algorithm-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    currentAlgorithm = e.target.dataset.algo;
+                    updateCodeDisplay(currentAlgorithm);
+                });
+            });
+        }
+
+        // Theme Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const icon = themeToggle.querySelector('i');
+            icon.classList.toggle('bi-moon-fill');
+            icon.classList.toggle('bi-sun-fill');
+        }
+
+        // Bubble Sort Implementation
+        async function bubbleSort() {
+            let arr = [...currentArray];
+            for (let i = 0; i < arr.length; i++) {
+                for (let j = 0; j < arr.length - i - 1; j++) {
+                    if (!isAnimating) return;
+                    if (arr[j] > arr[j + 1]) {
+                        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                        currentArray = [...arr];
+                        displayArray();
+                        await new Promise(resolve => setTimeout(resolve, animationSpeed));
+                    }
+                }
+            }
+        }
+
+        // Start Animation
+        function startAnimation() {
+            isAnimating = true;
+            switch(currentAlgorithm) {
+                case 'bubbleSort':
+                    bubbleSort();
+                    break;
+                // Add other algorithms here
+            }
+        }
+
+        // Update Code Display
+        function updateCodeDisplay(algorithm) {
+            const codeImplementations = {
+                bubbleSort: `function bubbleSort(arr) {
+    for (let i = 0; i < arr.length; i++) {
+        for (let j = 0; j < arr.length - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            }
+        }
+    }
+    return arr;
+}`,
+                quickSort: `// Quick Sort Implementation
+Coming soon...`,
+                mergeSort: `// Merge Sort Implementation
+Coming soon...`
+            };
+
+            codeDisplay.textContent = codeImplementations[algorithm] || '// Select an algorithm';
+        }
+
+        // Initialize the application
+        init();
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
